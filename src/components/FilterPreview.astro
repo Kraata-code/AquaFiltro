@@ -1,0 +1,182 @@
+<div class="filter-preview">
+  <div class="filter-stage" role="img" aria-label="Modelo conceptual de filtro con tres cartuchos y módulos de sensores propuestos; no representa hardware definitivo">
+    <svg class="filter-fallback" viewBox="0 0 360 300" aria-hidden="true"><path d="M60 80H300" stroke="#aec6cf" stroke-width="24"/><g fill="#fff" stroke="#213e39" stroke-width="3"><rect x="65" y="95" width="65" height="160" rx="25"/><rect x="147" y="95" width="65" height="160" rx="25"/><rect x="229" y="95" width="65" height="160" rx="25"/></g><g fill="#b8e6c1"><rect x="70" y="130" width="55" height="35"/><rect x="152" y="130" width="55" height="35"/><rect x="234" y="130" width="55" height="35"/></g><rect x="155" y="32" width="50" height="34" rx="8" fill="#213e39"/></svg>
+  </div>
+  <div class="filter-controls" aria-label="Controles del modelo"><button type="button" data-turn="-1" aria-label="Girar filtro a la izquierda">←</button><button type="button" data-turn="0">Restablecer</button><button type="button" data-turn="1" aria-label="Girar filtro a la derecha">→</button><button type="button" data-sensors aria-pressed="false">Ver sensores</button></div>
+  <ol class="sensor-legend" aria-label="Componentes conceptuales"><li><b>1</b> Sensor de entrada propuesto</li><li><b>2</b> Sensor de salida propuesto</li><li><b>3</b> Módulo de monitoreo propuesto</li></ol>
+  <p class="filter-caption" role="status">Vista conceptual · Sensores propuestos · Sin lecturas reales</p>
+</div>
+
+<script>
+  const host = document.querySelector<HTMLElement>('.filter-preview');
+  if (host) {
+    const observer = new IntersectionObserver(async ([entry]) => {
+      if (!entry.isIntersecting) return;
+      observer.disconnect();
+      const stage = host.querySelector<HTMLElement>('.filter-stage')!;
+      const status = host.querySelector<HTMLElement>('[role="status"]')!;
+      try {
+        const T = await import('three');
+        const renderer = new T.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        const scene = new T.Scene();
+        const camera = new T.PerspectiveCamera(36, 1, 0.1, 30);
+        camera.position.set(0, 0.5, 8.8);
+        camera.lookAt(0, 0.15, 0);
+        scene.add(new T.HemisphereLight(0xffffff, 0x61736e, 3));
+        const light = new T.DirectionalLight(0xffffff, 4);
+        light.position.set(-3, 5, 4);
+        scene.add(light);
+        const model = new T.Group();
+        scene.add(model);
+        const white = new T.MeshStandardMaterial({ color: '#ffffff', roughness: 0.35 });
+        const blue = new T.MeshStandardMaterial({ color: '#aec6cf', roughness: 0.45 });
+        const mint = new T.MeshStandardMaterial({ color: '#b8e6c1', roughness: 0.5 });
+        const ink = new T.MeshStandardMaterial({ color: '#213e39', roughness: 0.5 });
+        const metal = new T.MeshStandardMaterial({ color: '#dde0d7', metalness: 0.55, roughness: 0.4 });
+        const sensorMaterial = new T.MeshStandardMaterial({ color: '#fad3b2', roughness: 0.4 });
+        const materials: import('three').Material[] = [white, blue, mint, ink, metal, sensorMaterial];
+        const textures: import('three').Texture[] = [];
+        const body = new T.CylinderGeometry(0.32, 0.29, 1.65, 24);
+        const cap = new T.CylinderGeometry(0.37, 0.37, 0.22, 24);
+        const band = new T.CylinderGeometry(0.325, 0.32, 0.28, 24);
+        const add = (geometry: import('three').BufferGeometry, material: import('three').Material, x: number, y: number, z = 0) => {
+          const mesh = new T.Mesh(geometry, material);
+          mesh.position.set(x, y, z);
+          model.add(mesh);
+          return mesh;
+        };
+        const tube = (points: number[][], radius: number, material: import('three').Material) => {
+          const curve = new T.CatmullRomCurve3(points.map(([x, y, z]) => new T.Vector3(x, y, z)));
+          return add(new T.TubeGeometry(curve, 20, radius, 8, false), material, 0, 0);
+        };
+        const marker = (number: string, x: number, y: number, z: number) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = canvas.height = 128;
+          const context = canvas.getContext('2d');
+          if (!context) return;
+          context.fillStyle = '#fad3b2';
+          context.beginPath();
+          context.arc(64, 64, 55, 0, Math.PI * 2);
+          context.fill();
+          context.fillStyle = '#213e39';
+          context.font = 'bold 72px sans-serif';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.fillText(number, 64, 68);
+          const texture = new T.CanvasTexture(canvas);
+          texture.colorSpace = T.SRGBColorSpace;
+          textures.push(texture);
+          const material = new T.SpriteMaterial({ map: texture });
+          materials.push(material);
+          const sprite = new T.Sprite(material);
+          sprite.position.set(x, y, z);
+          sprite.scale.setScalar(0.34);
+          model.add(sprite);
+        };
+        add(new T.BoxGeometry(3.15, 0.55, 0.16), metal, 0, 0.6, -0.4);
+        const foot = new T.BoxGeometry(0.18, 2, 0.18);
+        add(foot, metal, -1.38, -0.25, -0.4);
+        add(foot, metal, 1.38, -0.25, -0.4);
+        add(new T.BoxGeometry(3.15, 0.12, 1), metal, 0, -1.3, -0.12);
+        const collar = new T.CylinderGeometry(0.35, 0.35, 0.08, 24);
+        const tip = new T.SphereGeometry(0.29, 20, 10);
+        for (const x of [-0.9, 0, 0.9]) {
+          add(body, white, x, -0.25);
+          add(cap, blue, x, 0.65);
+          add(band, mint, x, -0.1);
+          add(collar, ink, x, 0.5);
+          add(tip, white, x, -1.04).scale.y = 0.4;
+          tube([[x, 0.7, 0], [x, 0.92, 0], [x + 0.16, 1.02, 0]], 0.08, blue);
+        }
+        const pipe = add(new T.CylinderGeometry(0.1, 0.1, 3.2, 16), blue, 0, 0.95);
+        pipe.rotation.z = Math.PI / 2;
+        // shortcut: generic sensor housings; replace with approved hardware geometry when available.
+        const coupling = new T.CylinderGeometry(0.17, 0.17, 0.28, 16);
+        add(coupling, metal, -1.48, 0.95).rotation.z = Math.PI / 2;
+        add(coupling, metal, 1.48, 0.95).rotation.z = Math.PI / 2;
+        tube([[-1.6, 0.95, 0], [-1.85, 0.95, 0], [-1.85, 0.5, 0]], 0.07, blue);
+        tube([[1.6, 0.95, 0], [1.85, 0.95, 0], [1.85, 0.5, 0]], 0.07, mint);
+        add(new T.CylinderGeometry(0.21, 0.16, 0.44, 20), sensorMaterial, -1.2, 1.2, 0.12);
+        add(new T.BoxGeometry(0.4, 0.4, 0.4), sensorMaterial, 1.2, 1.2, 0.12);
+        tube([[-1.2, 1.4, 0.12], [-0.95, 1.7, -0.05], [-0.4, 1.6, 0]], 0.022, ink);
+        tube([[1.2, 1.4, 0.12], [0.95, 1.7, -0.05], [0.4, 1.6, 0]], 0.022, ink);
+        add(new T.BoxGeometry(0.95, 0.52, 0.32), ink, 0, 1.5);
+        add(new T.BoxGeometry(0.65, 0.25, 0.02), mint, 0, 1.5, 0.17);
+        marker('1', -1.2, 1.2, 0.42);
+        marker('2', 1.2, 1.2, 0.42);
+        marker('3', 0, 1.5, 0.22);
+        model.rotation.set(0.12, -0.4, 0);
+        const render = () => renderer.render(scene, camera);
+        const resize = new ResizeObserver(() => {
+          const { width, height } = stage.getBoundingClientRect();
+          if (!width || !height) return;
+          renderer.setSize(width, height);
+          camera.aspect = width / height;
+          camera.position.z = Math.max(8.8, 7 / camera.aspect);
+          camera.updateProjectionMatrix();
+          render();
+        });
+        renderer.domElement.setAttribute('aria-hidden', 'true');
+        stage.append(renderer.domElement);
+        stage.querySelector('svg')!.remove();
+        resize.observe(stage);
+        const sensorButton = host.querySelector<HTMLButtonElement>('[data-sensors]')!;
+        const clearHighlight = () => {
+          sensorMaterial.emissive.setHex(0x000000);
+          sensorButton.setAttribute('aria-pressed', 'false');
+          host.classList.remove('sensors-highlighted');
+        };
+        sensorButton.addEventListener('click', () => {
+          const active = sensorButton.getAttribute('aria-pressed') !== 'true';
+          clearHighlight();
+          if (active) {
+            model.rotation.set(0, 0, 0);
+            sensorMaterial.emissive.setHex(0x60300b);
+            sensorButton.setAttribute('aria-pressed', 'true');
+            host.classList.add('sensors-highlighted');
+          }
+          render();
+        });
+        host.querySelectorAll<HTMLButtonElement>('[data-turn]').forEach(button => {
+          button.addEventListener('click', () => {
+            const turn = Number(button.dataset.turn);
+            clearHighlight();
+            if (!turn) model.rotation.x = 0.12;
+            model.rotation.y = turn ? model.rotation.y + turn * Math.PI / 8 : -0.4;
+            render();
+          });
+        });
+        let pointerX: number | undefined;
+        stage.addEventListener('pointerdown', event => {
+          if (event.pointerType === 'mouse' && event.button !== 0) return;
+          pointerX = event.clientX;
+          stage.setPointerCapture(event.pointerId);
+        });
+        stage.addEventListener('pointermove', event => {
+          if (pointerX === undefined) return;
+          model.rotation.y += (event.clientX - pointerX) * 0.01;
+          pointerX = event.clientX;
+          render();
+        });
+        stage.addEventListener('lostpointercapture', () => { pointerX = undefined; });
+        renderer.domElement.addEventListener('webglcontextlost', event => {
+          event.preventDefault();
+          status.textContent = 'Vista 3D no disponible temporalmente. Modelo conceptual con sensores propuestos.';
+        });
+        renderer.domElement.addEventListener('webglcontextrestored', render);
+        window.addEventListener('pagehide', event => {
+          if (event.persisted) return;
+          resize.disconnect();
+          new Set(model.children.filter(child => child instanceof T.Mesh).map(child => child.geometry)).forEach(geometry => geometry.dispose());
+          materials.forEach(material => material.dispose());
+          textures.forEach(texture => texture.dispose());
+          renderer.dispose();
+        }, { once: true });
+      } catch {
+        status.textContent = 'Vista estática conceptual · 3D no disponible · Sensores propuestos';
+      }
+    });
+    observer.observe(host);
+  }
+</script>

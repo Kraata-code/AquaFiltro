@@ -1,0 +1,51 @@
+<div class="local-map">
+  <div id="local-map" class="map-canvas" role="region" aria-label="Mapa de Guadalajara y alrededores"><p class="map-loading" role="status">Cargando mapa de Guadalajara…</p></div>
+  <div class="map-info"><span>Guadalajara · Zona de referencia aproximada (radio de 25 km), no límite oficial ni domicilio comercial. Cobertura sujeta a confirmación.</span><a href="https://www.openstreetmap.org/#map=11/20.675/-103.36" target="_blank" rel="noopener noreferrer">Abrir mapa ↗</a></div>
+</div>
+
+<script>
+  import 'leaflet/dist/leaflet.css';
+
+  const container = document.getElementById('local-map');
+  if (container) {
+    const observer = new IntersectionObserver(async ([entry]) => {
+      if (!entry.isIntersecting) return;
+      observer.disconnect();
+      const status = container.querySelector<HTMLElement>('[role="status"]');
+      try {
+        const L = await import('leaflet');
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const map = L.map(container, {
+          scrollWheelZoom: false,
+          zoomAnimation: !reduceMotion,
+          fadeAnimation: !reduceMotion,
+          inertia: !reduceMotion,
+        }).setView([20.675, -103.36], 11);
+        const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        });
+        tiles.on('tileerror', () => {
+          if (status) {
+            status.hidden = false;
+            status.textContent = 'No se pudo cargar parte del mapa. Puedes usar «Abrir mapa».';
+          }
+        });
+        tiles.on('tileload', () => { if (status) status.hidden = true; });
+        tiles.addTo(map);
+        const area = L.circle([20.675, -103.36], {
+          radius: 25000,
+          color: '#AEC6CF',
+          fillColor: '#B8E6C1',
+          fillOpacity: 0.2,
+          weight: 2,
+          interactive: false,
+        }).addTo(map);
+        map.fitBounds(area.getBounds(), { padding: [16, 16], animate: false });
+      } catch {
+        if (status) status.textContent = 'Mapa no disponible. Usa el enlace «Abrir mapa».';
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(container);
+  }
+</script>

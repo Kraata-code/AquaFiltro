@@ -1,0 +1,134 @@
+---
+const steps = [
+  { title: 'Todo empieza en tu hogar.', label: 'Entrada de agua', text: 'El agua llega al sistema a través de la instalación de tu hogar. Este es el inicio del recorrido.', note: '01 / Recibir', color: '#AEC6CF' },
+  { title: 'Un sistema, varias etapas.', label: 'Filtración', text: 'El agua recorre los cartuchos. La configuración se define después de evaluar el agua y las necesidades de tu hogar.', note: '02 / Filtrar', color: '#B8E6C1' },
+  { title: 'Del equipo a tu pantalla.', label: 'Monitoreo propuesto', text: 'La propuesta contempla consultar flujo, temperatura y referencias de mantenimiento desde una aplicación.', note: '03 / Conocer', color: '#FAD3B2' },
+];
+---
+<div class="water-journey">
+  <div class="journey-board">
+    <div class="journey-heading"><span>UN RECORRIDO, TRES MOMENTOS</span><span class="scroll-hint">Desliza para seguir el agua ↓</span></div>
+    <ol class="journey-cards">
+      {steps.map((step, index) => <li class="journey-card" style={`--accent:${step.color}`}>
+        <div class="card-heading"><span class="step-number">0{index + 1}</span><span>{step.label}</span><span aria-hidden="true">↗</span></div>
+        <div class="card-art" aria-hidden="true">
+          <span class="art-orbit"></span>
+          <svg viewBox="0 0 320 260" fill="none">
+            {index === 0 ? <>
+              <path d="M67 105V65L160 9L253 65V105" stroke="#213E39" stroke-width="4" stroke-linejoin="round" />
+              <path d="M92 90V155H228V90M139 155V105H181V155" stroke="#61736E" stroke-width="3" />
+              <path d="M20 210H100Q120 210 120 190V180Q120 165 140 165H280" stroke="#DDE0D7" stroke-width="18" stroke-linecap="round" />
+              <path data-flow d="M20 210H100Q120 210 120 190V180Q120 165 140 165H280" stroke="#668F9E" stroke-width="7" stroke-linecap="round" />
+              <g data-detail><circle cx="210" cy="165" r="21" fill="#FFF" stroke="#213E39" stroke-width="3" /><path d="M210 148V182M193 165H227" stroke="#213E39" stroke-width="3" /></g>
+              <path data-drop d="M58 153C58 153 42 173 42 182A16 16 0 0074 182C74 173 58 153 58 153Z" fill="#668F9E" />
+              <path d="M265 155L277 165L265 175" stroke="#213E39" stroke-width="3" />
+            </> : index === 1 ? <>
+              <path d="M20 60H300" stroke="#DDE0D7" stroke-width="16" stroke-linecap="round" />
+              <path data-flow d="M20 60H300" stroke="#527C6A" stroke-width="6" stroke-linecap="round" />
+              {[62, 132, 202].map(x => <g data-cartridge>
+                <rect x={x} y="81" width="56" height="139" rx="23" fill="#FFF" stroke="#213E39" stroke-width="3" />
+                <rect x={x - 3} y="73" width="62" height="23" rx="7" fill="#AEC6CF" stroke="#213E39" stroke-width="3" />
+                <rect x={x + 4} y="131" width="48" height="40" rx="4" fill="#B8E6C1" />
+                <path d={`M${x + 28} 60V73M${x + 17} 183V199M${x + 28} 180V202M${x + 39} 183V199`} stroke="#527C6A" stroke-width="3" stroke-linecap="round" />
+              </g>)}
+              <path d="M280 50L292 60L280 70" stroke="#213E39" stroke-width="3" />
+            </> : <>
+              <g data-detail><rect x="24" y="108" width="59" height="73" rx="13" fill="#FAD3B2" stroke="#213E39" stroke-width="3" /><circle cx="53" cy="135" r="10" stroke="#213E39" stroke-width="3" /><path d="M42 161H65" stroke="#213E39" stroke-width="3" /></g>
+              <path d="M83 143H115Q130 143 130 126V84Q130 68 148 68H177" stroke="#DDE0D7" stroke-width="6" />
+              <path data-flow d="M83 143H115Q130 143 130 126V84Q130 68 148 68H177" stroke="#B47749" stroke-width="4" stroke-linecap="round" />
+              <g data-phone><rect x="177" y="23" width="115" height="216" rx="22" fill="#FFF" stroke="#213E39" stroke-width="4" /><path d="M215 36H253" stroke="#213E39" stroke-width="5" stroke-linecap="round" /><rect x="190" y="62" width="89" height="51" rx="8" fill="#B8E6C1" /><path d="M201 95L215 83L229 91L244 74L265 79" stroke="#527C6A" stroke-width="3" /><rect x="190" y="125" width="40" height="39" rx="7" fill="#AEC6CF" /><rect x="239" y="125" width="40" height="39" rx="7" fill="#FAD3B2" /><path d="M193 184H274M193 197H249" stroke="#DDE0D7" stroke-width="6" stroke-linecap="round" /><circle cx="235" cy="222" r="5" fill="#213E39" /></g>
+            </>}
+          </svg>
+          <span class="art-label">{index === 2 ? 'Conexión conceptual · No activa' : 'Recorrido ilustrativo'}</span>
+        </div>
+        <div class="card-copy"><p class="eyebrow">{step.note}</p><h3>{step.title}</h3><p>{step.text}</p></div>
+        <div class="card-progress" aria-hidden="true"><span data-progress></span></div>
+      </li>)}
+    </ol>
+    <p class="journey-disclaimer"><span aria-hidden="true">ⓘ</span> Representación conceptual · Sin lecturas reales. Cartuchos, sensores y conexiones no representan hardware confirmado. Las mediciones no certifican potabilidad.</p>
+  </div>
+</div>
+
+<script>
+  const journey = document.querySelector<HTMLElement>('.water-journey');
+  if (journey) {
+    const observer = new IntersectionObserver(async ([entry]) => {
+      if (!entry.isIntersecting) return;
+      observer.disconnect();
+      try {
+        const [{ gsap }, { ScrollTrigger }] = await Promise.all([import('gsap'), import('gsap/ScrollTrigger')]);
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.matchMedia().add({
+          desktop: '(min-width: 1001px) and (min-height: 780px)',
+          motion: '(prefers-reduced-motion: no-preference)',
+        }, context => {
+          if (!context.conditions?.motion) return;
+          const desktop = context.conditions.desktop;
+          journey.classList.toggle('is-enhanced', Boolean(desktop));
+          const cards = journey.querySelectorAll<HTMLElement>('.journey-card');
+          const master = desktop ? gsap.timeline({ scrollTrigger: {
+            trigger: journey, start: 'top 8%', end: 'bottom bottom', scrub: true,
+          } }) : null;
+          cards.forEach(card => {
+            const timeline = gsap.timeline();
+            timeline.fromTo(card, { y: 24, boxShadow: '0 0 0 0 transparent' },
+              { y: 0, boxShadow: '0 20px 48px -24px #213e3966', duration: 1 }, 0);
+            card.querySelectorAll<SVGPathElement>('[data-flow]').forEach(flow => {
+              const length = flow.getTotalLength();
+              timeline.fromTo(flow, { strokeDasharray: length, strokeDashoffset: length },
+                { strokeDashoffset: 0, duration: 1, ease: 'none' }, 0);
+            });
+            timeline.fromTo(card.querySelector('[data-progress]'), { scaleX: 0 }, { scaleX: 1, duration: 1, ease: 'none' }, 0);
+            timeline.fromTo(card.querySelectorAll('[data-cartridge], [data-detail], [data-phone], [data-drop]'),
+              { y: 12, opacity: 0.35 }, { y: 0, opacity: 1, stagger: 0.12, duration: 0.6 }, 0);
+            if (master) master.add(timeline);
+            else ScrollTrigger.create({ trigger: card, start: 'top 85%', end: 'center 50%', scrub: true, animation: timeline });
+          });
+          return () => journey.classList.remove('is-enhanced');
+        });
+      } catch (error) {
+        console.warn('El recorrido conserva su ilustración estática.', error);
+      }
+    }, { rootMargin: '200px' });
+    observer.observe(journey);
+  }
+</script>
+
+<style>
+  .journey-heading{display:flex;justify-content:space-between;gap:16px;font-size:10px;font-weight:700;letter-spacing:1.5px;margin-bottom:22px}
+  .scroll-hint{letter-spacing:0;font-weight:400;color:var(--muted)}
+  .journey-cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+  .journey-card{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:var(--white);display:flex;flex-direction:column;min-width:0}
+  .card-heading{display:flex;align-items:center;gap:12px;padding:20px 20px 0;font-size:12px;font-weight:650}
+  .card-heading>span:last-child{margin-left:auto;font-size:22px}
+  .step-number{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--accent);color:#213E39;font-size:12px}
+  .card-art{position:relative;margin:20px 12px 0;border-radius:16px;background:linear-gradient(145deg,#fff,var(--accent));color:#213E39;overflow:hidden}
+  .art-orbit{position:absolute;width:220px;height:220px;border:1px solid #213e3914;border-radius:50%;top:8%;left:15%}
+  svg{position:relative;display:block;width:100%;height:auto;padding:20px 8px 0}
+  .art-label{display:block;text-align:center;font-size:9px;letter-spacing:.5px;padding:8px 4px 14px}
+  .card-copy{padding:24px;flex:1}
+  .card-copy .eyebrow{margin-bottom:12px;font-size:9px}
+  .card-copy h3{font-family:Manrope,sans-serif;font-size:clamp(20px,2vw,26px);font-weight:500;line-height:1.2;letter-spacing:-.7px;margin:0 0 14px}
+  .card-copy>p:last-child{font-size:13px;line-height:1.8;color:var(--muted);margin:0}
+  .card-progress{height:5px;background:var(--line)}
+  .card-progress span{display:block;height:100%;background:var(--accent);transform-origin:left}
+  .journey-disclaimer{display:flex;gap:8px;max-width:780px;font-size:11px;color:var(--muted);margin:24px 0 0}
+  .is-enhanced{height:190vh}
+  .is-enhanced .journey-board{position:sticky;top:8vh}
+  @media(max-width:1000px){
+    .journey-cards{grid-template-columns:1fr;gap:24px}
+    .journey-card{display:grid;grid-template-columns:1fr 1fr;align-items:center}
+    .card-heading{grid-column:1/-1}
+    .card-art{margin:20px;grid-column:1;grid-row:2}
+    .card-copy{grid-column:2;grid-row:2;padding:24px 24px 24px 0}
+    .card-progress{grid-column:1/-1;width:100%}
+  }
+  @media(max-width:540px){
+    .journey-heading{flex-direction:column;gap:6px}
+    .journey-card{display:flex;align-items:stretch}
+    .card-art{margin:18px 18px 0}
+    .card-copy{padding:24px}
+    .card-copy h3{font-size:26px}
+  }
+  @media(prefers-reduced-motion:reduce){.is-enhanced{height:auto}.is-enhanced .journey-board{position:static}}
+</style>
